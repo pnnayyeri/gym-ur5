@@ -1,6 +1,0 @@
-import gym
-
-class UR5Env(gym.Env):
-
-  def __init__(self):
-  
