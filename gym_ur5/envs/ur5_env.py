@@ -28,10 +28,10 @@ class UR5Env(gym.Env):
         self.reward = 0
         # self.n_substeps = n_substeps #not implemented
         # self.sim_timestep = 0.5      # set in coppeliaSim (not implemented)
-        n_actions = 3
-        n_states = 6
-        self.action_space = spaces.Box(-1., 1, shape = (n_actions,), dtype = 'float32')
-        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(n_states,), dtype='float32')
+        self.n_actions = 3
+        self.n_states = 6
+        self.action_space = spaces.Box(-1., 1, shape = (self.n_actions,), dtype = 'float32')
+        self.observation_space = spaces.Box(-np.inf, np.inf, shape=(self.n_states,), dtype='float32')
         self.getHandles()
         sim.simxGetPingTime(self.clientID)
 
