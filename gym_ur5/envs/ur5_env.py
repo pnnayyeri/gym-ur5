@@ -15,18 +15,18 @@ class UR5Env(gym.Env):
         sim.simxFinish(-1)
         for _ in range(5):
             self.clientID = sim.simxStart('127.0.0.1',19997,True,True,5000,5)
-            if self.clientID is not -1:
+            if self.clientID != -1:
                 print('[INFO] Connected to CoppeliaSim.')
                 break
-        if self.clientID is -1:
+        if self.clientID == -1:
             raise IOError('[ERROR] Could not connect to CoppeliaSim.')
 
         sim.simxSynchronous(self.clientID, True)
-        sim.simxStartSimulation(self.clientID, sim.simx_opmode_oneshot)
+        # sim.simxStartSimulation(self.clientID, sim.simx_opmode_oneshot)
         sim.simxGetPingTime(self.clientID)
         self.stepCount = 0
         self.reward = 0
-        # self.n_substeps = n_substeps #not implemented
+        self.n_substeps = 10
         # self.sim_timestep = 0.5      # set in coppeliaSim (not implemented)
         self.n_actions = 3
         self.n_states = 6
@@ -75,12 +75,12 @@ class UR5Env(gym.Env):
         sim.simxGetPingTime(self.clientID)
 
     def _simulation_step(self):
-        # for i in range(self.n_substeps):
-        #     sim.simxSynchronousTrigger(self.clientID)
-
-        while self.getTargetPos(False) is not self.getFinalPos(False): # keep triggering until movement is done
-            sim.simxSynchronousTrigger(self.clientID)
+        #for _ in range(self.n_substeps):
+        sim.simxSynchronousTrigger(self.clientID)
         sim.simxGetPingTime(self.clientID)
+        # while self.getTargetPos(False) is not self.getFinalPos(False): # keep triggering until movement is done
+        #     sim.simxSynchronousTrigger(self.clientID)
+        # sim.simxGetPingTime(self.clientID)
 
     def _get_obs(self):
         X, Y, Z = self.getKinectXYZ(False)
@@ -88,13 +88,15 @@ class UR5Env(gym.Env):
         return [X, Y, Z, forces[0][2], forces[1][2], forces[2][2]]
 
     def _is_done(self):
-        pathIsDone = sim.simxGetFloatSignal(self.clientID,'movePathDone',sim.simx_opmode_buffer)[1]
+        pathIsDone = sim.simxGetFloatSignal(self.clientID,'movePathDone',sim.simx_opmode_blocking)[1]
         sim.simxGetPingTime(self.clientID)
         return True if pathIsDone==1 else False
 
     def reset(self):
         self.resetSim()
         self.prepareSim()
+        obs = self._get_obs()
+        return obs
 
     def render(self, mode='human'):
         raise NotImplementedError
