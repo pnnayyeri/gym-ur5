@@ -35,6 +35,7 @@ class UR5Env(gym.Env):
         self.getHandles()
         sim.simxGetPingTime(self.clientID)
 
+
     def getHandle(self, name, ignoreError = False, attempts = 5):
         for _ in range(attempts):
             res, out_handle = sim.simxGetObjectHandle(self.clientID, name, sim.simx_opmode_blocking)
@@ -46,13 +47,16 @@ class UR5Env(gym.Env):
             print('[WARNING] Failed to find {} with error {}.'.format(name, res))
         return out_handle
 
+
     def __del__(self):
         self.close()
+
 
     def close(self):
         sim.simxStopSimulation(self.clientID, sim.simx_opmode_oneshot)
         sim.simxGetPingTime(self.clientID)
         sim.simxFinish(self.clientID)
+
 
     def step(self, action):
         action = np.clip(action, self.action_space.low, self.action_space.high)
@@ -64,6 +68,7 @@ class UR5Env(gym.Env):
         reward = self.getReward()
         return obs, reward, done, info
 
+
     def _set_action(self, action):
         actionX = action[0]
         actionY = action[1]
@@ -74,6 +79,7 @@ class UR5Env(gym.Env):
         sim.simxSetFloatSignal(self.clientID, 'actionZ', actionZ, sim.simx_opmode_oneshot)
         sim.simxGetPingTime(self.clientID)
 
+
     def _simulation_step(self):
         #for _ in range(self.n_substeps):
         sim.simxSynchronousTrigger(self.clientID)
@@ -82,24 +88,31 @@ class UR5Env(gym.Env):
         #     sim.simxSynchronousTrigger(self.clientID)
         # sim.simxGetPingTime(self.clientID)
 
+
     def _get_obs(self):
         X, Y, Z = self.getKinectXYZ(False)
         forces = self.getForce(False)
         return [X, Y, Z, forces[0][2], forces[1][2], forces[2][2]]
+
 
     def _is_done(self):
         pathIsDone = sim.simxGetFloatSignal(self.clientID,'movePathDone',sim.simx_opmode_blocking)[1]
         sim.simxGetPingTime(self.clientID)
         return True if pathIsDone==1 else False
 
+
     def reset(self):
+        sim.simxSetFloatSignal(self.clientID, 'renderEnv', 0, sim.simx_opmode_oneshot)
+        sim.simxGetPingTime(self.clientID)
         self.resetSim()
         self.prepareSim()
-        obs = self._get_obs()
+        obs = self._get_obs()    
         return obs
 
+
     def render(self, mode='human'):
-        raise NotImplementedError
+        sim.simxSetFloatSignal(self.clientID, 'renderEnv', 1, sim.simx_opmode_oneshot)
+        sim.simxGetPingTime(self.clientID)
 
     def getHandles(self):
         '''
@@ -137,6 +150,7 @@ class UR5Env(gym.Env):
             print('[WARNING] problem in getting tip position.')
             return -1
 
+
     def getTargetPos(self, initialize = True):
         if initialize:
             ret, pos = sim.simxGetObjectPosition(self.clientID, self.targetObjectHandle, -1, sim.simx_opmode_streaming)
@@ -148,6 +162,7 @@ class UR5Env(gym.Env):
             print('[WARNING] problem in getting target position.')
             return -1
 
+
     def getFinalPos(self, initialize = True):
         if initialize:
             ret, pos = sim.simxGetObjectPosition(self.clientID, self.testDummyHandle, -1, sim.simx_opmode_streaming)
@@ -158,6 +173,7 @@ class UR5Env(gym.Env):
         else:
             print('[WARNING] problem in getting tip position.')
             return -1
+
 
     def getKinectXYZ(self, initialize = True):
         if initialize:
@@ -171,6 +187,7 @@ class UR5Env(gym.Env):
         sim.simxGetPingTime(self.clientID)
         return X,Y,Z
 
+
     def getForce(self, initialize = True):
         if initialize:
             F1 = sim.simxReadForceSensor(self.clientID,self.fsHandles[0],sim.simx_opmode_streaming)[2]
@@ -182,6 +199,7 @@ class UR5Env(gym.Env):
             F3 = sim.simxReadForceSensor(self.clientID,self.fsHandles[2],sim.simx_opmode_buffer)[2]
         sim.simxGetPingTime(self.clientID)
         return [F1,F2,F3]
+
 
     def getForceMagnitude(self, initialize = True):
         if initialize:
@@ -195,6 +213,7 @@ class UR5Env(gym.Env):
         sim.simxGetPingTime(self.clientID)
         return [np.linalg.norm(F1),np.linalg.norm(F2),np.linalg.norm(F3)]
 
+
     def initializeFunctions(self):
         self.getKinectXYZ(True)
         self.getForce(True)
@@ -202,6 +221,7 @@ class UR5Env(gym.Env):
         self.getTipPos(True)
         self.getTargetPos(True)
         self.getFinalPos(True)
+
 
     def getReward(self):
         tipPos    = self.getTipPos(False)
