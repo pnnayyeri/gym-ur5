@@ -16,7 +16,7 @@ class UR5Env(gym.Env):
         for _ in range(5):
             self.clientID = sim.simxStart('127.0.0.1',19997,True,True,5000,5)
             if self.clientID != -1:
-                print('[INFO] Connected to CoppeliaSim.')
+                # print('[INFO] Connected to CoppeliaSim.')
                 break
         if self.clientID == -1:
             raise IOError('[ERROR] Could not connect to CoppeliaSim.')
@@ -32,7 +32,7 @@ class UR5Env(gym.Env):
         self.n_states = 6
         self.action_space = spaces.Box(-1., 1, shape = (self.n_actions,), dtype = 'float32')
         self.observation_space = spaces.Box(-np.inf, np.inf, shape=(self.n_states,), dtype='float32')
-        self.getHandles()
+        self._getHandles()
         sim.simxGetPingTime(self.clientID)
 
 
@@ -40,11 +40,11 @@ class UR5Env(gym.Env):
         for _ in range(attempts):
             res, out_handle = sim.simxGetObjectHandle(self.clientID, name, sim.simx_opmode_blocking)
             if res == sim.simx_return_ok or ignoreError:
-                print('[INFO] {} handle obtained.'.format(name))
+                # print('[INFO] {} handle obtained.'.format(name))
                 break
             sim.simxGetPingTime(self.clientID)
-        if res!=sim.simx_return_ok and not ignoreError:
-            print('[WARNING] Failed to find {} with error {}.'.format(name, res))
+        # if res!=sim.simx_return_ok and not ignoreError:
+            # print('[WARNING] Failed to find {} with error {}.'.format(name, res))
         return out_handle
 
 
@@ -59,13 +59,15 @@ class UR5Env(gym.Env):
 
 
     def step(self, action):
-        action = np.clip(action, self.action_space.low, self.action_space.high)
+        # action = np.clip(action, self.action_space.low, self.action_space.high)
+        obs = self._get_obs()
+        action = np.clip(action, obs[0:3]-0.1*np.ones(([1,3])), obs[0:3]+0.1*np.ones(([1,3])))[0]
         self._set_action(action)
         self._simulation_step()
         obs = self._get_obs()
         done = self._is_done()
         info = {}
-        reward = self.getReward()
+        reward = self._getReward()
         return obs, reward, done, info
 
 
@@ -84,7 +86,7 @@ class UR5Env(gym.Env):
         #for _ in range(self.n_substeps):
         sim.simxSynchronousTrigger(self.clientID)
         sim.simxGetPingTime(self.clientID)
-        # while self.getTargetPos(False) is not self.getFinalPos(False): # keep triggering until movement is done
+        # while self._getTargetPos(False) is not self._getFinalPos(False): # keep triggering until movement is done
         #     sim.simxSynchronousTrigger(self.clientID)
         # sim.simxGetPingTime(self.clientID)
 
@@ -106,7 +108,7 @@ class UR5Env(gym.Env):
         sim.simxGetPingTime(self.clientID)
         self.resetSim()
         self.prepareSim()
-        obs = self._get_obs()    
+        obs = self._get_obs()
         return obs
 
 
@@ -114,32 +116,32 @@ class UR5Env(gym.Env):
         sim.simxSetFloatSignal(self.clientID, 'renderEnv', 1, sim.simx_opmode_oneshot)
         sim.simxGetPingTime(self.clientID)
 
-    def getHandles(self):
+    def _getHandles(self):
         '''
         print('getting tip handle...')
         self.tipHandle = self.getHandle('UR5_link7_visible')
         print('tip handle obtained successfully.')
         '''
         self.jointHandles = []
-        print('[INFO] getting joint handles...')
+        # print('[INFO] getting joint handles...')
         for i in range(1,7):
             self.jointHandles.append(self.getHandle('UR5_joint{}'.format(i)))
-        print('[INFO] joint handles obtained successfully.')
-        print('[INFO] getting dummy handles...')
+        # print('[INFO] joint handles obtained successfully.')
+        # print('[INFO] getting dummy handles...')
         self.tipDummyHandle     = self.getHandle('Tip')
         self.targetDummyHandle  = self.getHandle('TargetDummy')
         self.testDummyHandle    = self.getHandle('TestDummy')
         # print('[INFO] dummy handles obtained successfully.')
         self.targetObjectHandle = self.getHandle('TargetObject')
-        #print('[INFO] target object handle obtained successfully.')
-        print('[INFO] getting force sensor handles...')
+        # print('[INFO] target object handle obtained successfully.')
+        # print('[INFO] getting force sensor handles...')
         self.fsHandles = []
         for i in range(1,4):
             self.fsHandles.append(self.getHandle('JacoHand_forceSens2_finger{}'.format(i)))
-        print('[INFO] force sensor handles obtained successfully.')
+        # print('[INFO] force sensor handles obtained successfully.')
 
 
-    def getTipPos(self, initialize = True):
+    def _getTipPos(self, initialize = True):
         if initialize:
             ret, pos = sim.simxGetObjectPosition(self.clientID, self.tipDummyHandle, -1, sim.simx_opmode_streaming)
         else:
@@ -147,11 +149,11 @@ class UR5Env(gym.Env):
         if ret == sim.simx_return_ok:
             return pos
         else:
-            print('[WARNING] problem in getting tip position.')
+            # print('[WARNING] problem in getting tip position.')
             return -1
 
 
-    def getTargetPos(self, initialize = True):
+    def _getTargetPos(self, initialize = True):
         if initialize:
             ret, pos = sim.simxGetObjectPosition(self.clientID, self.targetObjectHandle, -1, sim.simx_opmode_streaming)
         else:
@@ -159,11 +161,11 @@ class UR5Env(gym.Env):
         if ret == sim.simx_return_ok:
             return pos
         else:
-            print('[WARNING] problem in getting target position.')
+            # print('[WARNING] problem in getting target position.')
             return -1
 
 
-    def getFinalPos(self, initialize = True):
+    def _getFinalPos(self, initialize = True):
         if initialize:
             ret, pos = sim.simxGetObjectPosition(self.clientID, self.testDummyHandle, -1, sim.simx_opmode_streaming)
         else:
@@ -171,7 +173,7 @@ class UR5Env(gym.Env):
         if ret == sim.simx_return_ok:
             return pos
         else:
-            print('[WARNING] problem in getting tip position.')
+            # print('[WARNING] problem in getting tip position.')
             return -1
 
 
@@ -218,14 +220,14 @@ class UR5Env(gym.Env):
         self.getKinectXYZ(True)
         self.getForce(True)
         self.getForceMagnitude(True)
-        self.getTipPos(True)
-        self.getTargetPos(True)
-        self.getFinalPos(True)
+        self._getTipPos(True)
+        self._getTargetPos(True)
+        self._getFinalPos(True)
 
 
-    def getReward(self):
-        tipPos    = self.getTipPos(False)
-        targetPos = self.getTargetPos(False)
+    def _getReward(self):
+        tipPos    = self._getTipPos(False)
+        targetPos = self._getTargetPos(False)
         dist      = np.linalg.norm(np.array(tipPos)-np.array(targetPos))
         self.stepCount += 1
         self.reward    = self.reward + (1/self.stepCount)*((-dist)-self.reward)
@@ -249,24 +251,24 @@ class UR5Env(gym.Env):
             sim.simxSetFloatSignal(self.clientID, 'actionY', actionY, sim.simx_opmode_oneshot)
             sim.simxSetFloatSignal(self.clientID, 'actionZ', actionZ, sim.simx_opmode_oneshot)
             sim.simxGetPingTime(self.clientID)
-        print('[INFO] simulation is ready for tracking.')
+        # print('[INFO] simulation is ready for tracking.')
 
 
     def resetSim(self):
-        print('[INFO] reseting sim...')
+        # print('[INFO] reseting sim...')
         ret = sim.simxStopSimulation(self.clientID,sim.simx_opmode_blocking)
         if ret == sim.simx_return_ok:
-            print('[INFO] sim reset successfully.')
+            # print('[INFO] sim reset successfully.')
             time.sleep(1)
         else:
             raise IOError('[ERROR] problem in reseting sim...')
         sim.simxGetPingTime(self.clientID)
-        print('[INFO] starting sim in synchronous mode...')
+        # print('[INFO] starting sim in synchronous mode...')
         sim.simxSynchronous(self.clientID, True)
         sim.simxGetPingTime(self.clientID)
         ret = sim.simxStartSimulation(self.clientID,sim.simx_opmode_oneshot)
-        if ret == sim.simx_return_ok:
-            print('[INFO] sim started successfully.')
+        # if ret == sim.simx_return_ok:
+            # print('[INFO] sim started successfully.')
         sim.simxGetPingTime(self.clientID)
         sim.simxClearFloatSignal(self.clientID, 'actionX', sim.simx_opmode_blocking)
         sim.simxClearFloatSignal(self.clientID, 'actionY', sim.simx_opmode_blocking)
@@ -305,10 +307,10 @@ class UR5Env(gym.Env):
             posY.append(Y)
             posZ.append(Z)
             tactile1.append(forces[0])
-            reward.append(self.getReward())
+            reward.append(self._getReward())
             sim.simxGetPingTime(self.clientID)
             pathIsDone = sim.simxGetFloatSignal(self.clientID,'movePathDone',sim.simx_opmode_buffer)[1]
             # time.sleep(0.5)
-        print('[INFO] tracking is done.')
-        print('[DATA] accumulated reward: {}'.format(np.sum(np.array(reward))))
+        # print('[INFO] tracking is done.')
+        # print('[DATA] accumulated reward: {}'.format(np.sum(np.array(reward))))
         sim.simxStopSimulation(self.clientID,sim.simx_opmode_blocking)
