@@ -92,7 +92,8 @@ class UR5Env(gym.Env):
 
 
     def _get_obs(self):
-        X, Y, Z = self.getKinectXYZ(False)
+        # X, Y, Z = self.getKinectXYZ(False)
+        X, Y, Z = self._getTargetPos(False) # changed observation with exact target pos
         forces = self.getForce(False)
         return [X, Y, Z, forces[0][2], forces[1][2], forces[2][2]]
 
