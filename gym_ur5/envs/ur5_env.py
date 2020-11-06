@@ -92,8 +92,8 @@ class UR5Env(gym.Env):
 
 
     def _get_obs(self):
-        # X, Y, Z = self.getKinectXYZ(False)
-        X, Y, Z = self._getTargetPos(False) # changed observation with exact target pos
+        X, Y, Z = self.getKinectXYZ(False)
+        # X, Y, Z = self._getTargetPosFromKinect(False) # changed observation with exact target pos
         forces = self.getForce(False)
         return [X, Y, Z, forces[0][2], forces[1][2], forces[2][2]]
 
@@ -136,6 +136,7 @@ class UR5Env(gym.Env):
         self.targetObjectHandle = self.getHandle('TargetObject')
         # print('[INFO] target object handle obtained successfully.')
         # print('[INFO] getting force sensor handles...')
+        self.kinectHandle = self.getHandle('kinect_rgb')
         self.fsHandles = []
         for i in range(1,4):
             self.fsHandles.append(self.getHandle('JacoHand_forceSens2_finger{}'.format(i)))
@@ -165,6 +166,16 @@ class UR5Env(gym.Env):
             # print('[WARNING] problem in getting target position.')
             return -1
 
+    def _getTargetPosFromKinect(self, initialize = True):
+        if initialize:
+            ret, pos = sim.simxGetObjectPosition(self.clientID, self.targetObjectHandle, self.kinectHandle, sim.simx_opmode_streaming)
+        else:
+            ret, pos = sim.simxGetObjectPosition(self.clientID, self.targetObjectHandle, self.kinectHandle, sim.simx_opmode_buffer)
+        if ret == sim.simx_return_ok:
+            return pos
+        else:
+            # print('[WARNING] problem in getting target position.')
+            return -1
 
     def _getFinalPos(self, initialize = True):
         if initialize:
@@ -223,6 +234,7 @@ class UR5Env(gym.Env):
         self.getForceMagnitude(True)
         self._getTipPos(True)
         self._getTargetPos(True)
+        self._getTargetPosFromKinect(True)
         self._getFinalPos(True)
 
 
