@@ -243,7 +243,8 @@ class UR5Env(gym.Env):
         targetPos = self._getTargetPos(False)
         dist      = np.linalg.norm(np.array(tipPos)-np.array(targetPos))
         self.stepCount += 1
-        self.reward    = self.reward + (1/self.stepCount)*((-dist)-self.reward)
+        # self.reward = self.reward + (1/self.stepCount)*((-dist*dist)-self.reward)
+        self.reward = self.reward - (dist*dist)
         return self.reward
 
 
